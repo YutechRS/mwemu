@@ -8,8 +8,9 @@ repository.workspace = true
 readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# We rename the rust library from pymwemu to _pymwemu to avoid conflicts with the Python package name.
 [lib]
-name = "pymwemu"
+name = "_pymwemu"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
@@ -20,6 +21,7 @@ libmwemu = { path = "../libmwemu" }
 log.workspace = true
 iced-x86.workspace = true
 yaxpeax-arm.workspace = true
+pyo3-stub-gen = "0.22.3"
 
 [build-dependencies]
 pyo3-build-config = "0.26.0"
