@@ -71,3 +71,6 @@ docs/_build/
 
 # Pyenv
 .python-version
+
+# Include src/bin, needed for stub generation
+!src/bin

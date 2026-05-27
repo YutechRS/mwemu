@@ -1,4 +1,8 @@
 use env_logger::Env;
+use pyo3_stub_gen::define_stub_info_gatherer;
+use pyo3_stub_gen::derive::gen_stub_pyclass;
+use pyo3_stub_gen::derive::gen_stub_pyfunction;
+use pyo3_stub_gen::derive::gen_stub_pymethods;
 use std::io::Write as _;
 
 use pyo3::exceptions::PyException;
@@ -10,11 +14,13 @@ use libmwemu::emu32;
 use libmwemu::emu64;
 use libmwemu::maps::mem64::Permission;
 
-#[pyclass(unsendable)]
+#[gen_stub_pyclass]
+#[pyclass(unsendable, module="pymwemu._pymwemu")]
 pub struct Emu {
     emu: libmwemu::emu::Emu,
 }
 
+#[gen_stub_pymethods]
 #[pymethods]
 #[allow(deprecated)]
 impl Emu {
@@ -302,8 +308,8 @@ impl Emu {
     }
 
     /// Load code from bytes
-    fn load_code_bytes(&mut self, bytes: &[u8]) {
-        self.emu.load_code_bytes(bytes);
+    fn load_code_bytes(&mut self, bytes: Vec<u8>) {
+        self.emu.load_code_bytes(&bytes);
     }
 
     /// allocate a buffer on the emulated process address space.
@@ -647,8 +653,8 @@ impl Emu {
     }
 
     /// write a python list of int bytes to the emulator memory.
-    pub fn write_buffer(&mut self, to: u64, from: &[u8]) {
-        self.emu.maps.write_buffer(to, from);
+    pub fn write_buffer(&mut self, to: u64, from: Vec<u8>) {
+        self.emu.maps.write_buffer(to, &from);
     }
 
     /// read a buffer from the emulator memory to a python list of int bytes.
@@ -657,8 +663,8 @@ impl Emu {
     }
 
     /// write a python list of int bytes to the emulator memory.
-    pub fn write_bytes(&mut self, to: u64, from: &[u8]) {
-        self.emu.maps.write_buffer(to, from);
+    pub fn write_bytes(&mut self, to: u64, from: Vec<u8>) {
+        self.emu.maps.write_buffer(to, &from);
     }
 
     /// print all the maps that match a substring of the keyword provided.
@@ -716,8 +722,8 @@ impl Emu {
     }
 
     /// read an amount of bytes from an address to a python object.
-    pub fn read_bytes(&mut self, addr: u64, sz: usize) -> PyResult<&[u8]> {
-        Ok(self.emu.maps.read_bytes(addr, sz))
+    pub fn read_bytes(&mut self, addr: u64, sz: usize) -> PyResult<Vec<u8>> {
+        Ok(self.emu.maps.read_bytes(addr, sz).to_vec())
     }
 
     /// read an amount of bytes from an address to a string of spaced hexa bytes.
@@ -918,7 +924,9 @@ impl Emu {
     }
 }
 
+#[gen_stub_pyfunction(module = "pymwemu._pymwemu")]
 #[pyfunction]
+#[doc = r#"Initialize a 32-bit emulator instance."#]
 fn init32() -> PyResult<Emu> {
     let mut emu = Emu { emu: emu32() };
     emu.emu.cfg.console_enabled = false;
@@ -928,7 +936,9 @@ fn init32() -> PyResult<Emu> {
     Ok(emu)
 }
 
+#[gen_stub_pyfunction(module = "pymwemu._pymwemu")]
 #[pyfunction]
+#[doc = r#"Initialize a 64-bit emulator instance."#]
 fn init64() -> PyResult<Emu> {
     let mut emu = Emu { emu: emu64() };
     emu.emu.cfg.console_enabled = false;
@@ -939,7 +949,7 @@ fn init64() -> PyResult<Emu> {
 }
 
 #[pymodule]
-fn pymwemu(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
+fn _pymwemu(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     // Filter `goblin=warn` to drop the LoadCommand / Mach-o header / Ctx
     // spam goblin emits via `debug!()` while parsing Mach-O / PE / ELF —
     // the mwemu CLI does the equivalent via a fast_log Filter.
@@ -947,7 +957,12 @@ fn pymwemu(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
         .format(|buf, record| writeln!(buf, "{}", record.args()))
         .init();
     log::info!("Initialized logging");
+    m.add_class::<Emu>()?; 
     m.add_function(wrap_pyfunction!(init32, m)?)?;
     m.add_function(wrap_pyfunction!(init64, m)?)?;
     Ok(())
 }
+
+pyo3_stub_gen::reexport_module_members!("pymwemu" from "pymwemu._pymwemu");
+
+define_stub_info_gatherer!(stub_info);

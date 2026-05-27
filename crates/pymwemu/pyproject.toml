@@ -17,6 +17,11 @@ classifiers = [
 
 [tool.maturin]
 features = ["pyo3/extension-module"]
+python-source = "python"
+module-name = "pymwemu._pymwemu"
+
+[tool.pyo3-stub-gen]
+generate-init-py = true
 
 [metadata]
 description = "x86 32/64bits and systems emulation"
